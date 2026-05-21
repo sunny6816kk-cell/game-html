@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ເກມຄຳສັບອຸປະກອນຄອມພິວເຕີ - TC Running</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --secondary: #EC4899;
+            --bg-color: #0F172A;
+            --box-bg: #1E293B;
+            --text-light: #F8FAFC;
+            --success: #10B981;
+            --danger: #EF4444;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Noto Sans Lao', sans-serif;
+            background: linear-gradient(135deg, var(--bg-color), #312E81);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--box-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            text-align: center;
+            position: relative;
+        }
+        h1, h2 {
+            margin-top: 0;
+            background: linear-gradient(to right, #60A5FA, #F472B6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .game-instruction {
+            font-size: 1.3em;
+            color: #FBBF24;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        .author {
+            font-size: 0.9em;
+            color: #94A3B8;
+            margin-bottom: 20px;
+        }
+        /* Start Screen */
+        #start-screen .rules {
+            text-align: left;
+            background: rgba(255,255,255,0.05);
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-family: 'Noto Sans Lao', sans-serif;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(236, 72, 153, 0.4);
+        }
+        
+        /* Game Screen */
+        .hidden { display: none !important; }
+        .header-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        #timer {
+            color: #FBBF24;
+        }
+        .icon-display {
+            font-size: 4em;
+            margin: 15px 0;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        /* Drop & Drag Zones */
+        .slots-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 30px 0;
+            min-height: 60px;
+        }
+        .slot {
+            width: 40px;
+            height: 50px;
+            border: 2px dashed #64748B;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .slot.filled {
+            border-style: solid;
+            border-color: var(--primary);
+            background: rgba(79, 70, 229, 0.2);
+        }
+        .letter {
+            width: 40px;
+            height: 50px;
+            background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            cursor: grab;
+            user-select: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+        .letter:active { cursor: grabbing; transform: scale(0.9); }
+        .letters-pool {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+            min-height: 120px;
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-box {
+            background: var(--box-bg);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+        }
+        .modal-icon { font-size: 4em; margin-bottom: 10px; }
+        .modal-title { font-size: 1.8em; font-weight: bold; margin-bottom: 15px; }
+        .modal-text { font-size: 1.2em; margin-bottom: 25px; color: #CBD5E1; }
+        .success-text { color: var(--success); }
+        .error-text { color: var(--danger); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Start Screen -->
+    <div id="start-screen">
+        <h1>ເກມຄຳສັບອຸປະກອນຄອມພິວເຕີ</h1>
+        <div class="author">ສ້າງໂດຍ TC Running ⚡</div>
+        <div class="rules">
+            <strong>ກະຕິກາກົດລະບຽບ:</strong>
+            <ul>
+                <li>ເກມມີທັງໝົດ 10 ຂໍ້ (ຕອບຖືກຮອດ 10 ຂໍ້ເປັນຜູ້ຊະນະ).</li>
+                <li>ລາກຕົວອັກສອນ (ຫຼື ຄລິກ) ເພື່ອລຽງຄຳສັບໃຫ້ຖືກຕ້ອງ.</li>
+                <li>ຕອບຖືກໄດ້ຂໍ້ລະ 5 ຄະແນນ.</li>
+                <li>ມີເວລາຖອຍຫຼັງຂໍ້ລະ 45 ວິນາທີ.</li>
+                <li>ຖ້າຕອບຜິດ ຫຼື ເວລາໝົດ ຈະໄດ້ 0 ຄະແນນ ແລະ ຕ້ອງເລີ່ມເກມໃໝ່.</li>
+            </ul>
+        </div>
+        <button class="btn" onclick="startGame()">ເລີ່ມເກມເລີຍ!</button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="hidden">
+        <div class="header-stats">
+            <div>ຂໍ້ທີ: <span id="question-count">1/10</span></div>
+            <div>ຄະແນນ: <span id="score">0</span></div>
+            <div id="timer">ເວລາ: 45s</div>
+        </div>
+        
+        <!-- ຫົວຂໍ້ທີ່ເພີ່ມໃໝ່ -->
+        <div class="game-instruction">ຈົ່ງຈັດລຽນຊື່ ອຸປະກອນຄອມພິວເຕີ ໃຫ້ຖືກຕ້ອງ</div>
+        
+        <div class="icon-display" id="word-icon">🖥️</div>
+        
+        <!-- Drop slots -->
+        <div class="slots-container" id="answer-slots"></div>
+        
+        <!-- Draggable letters -->
+        <div class="letters-pool" id="letter-pool"></div>
+        
+        <button class="btn" onclick="checkAnswer()">ກວດຄຳຕອບ</button>
+    </div>
+</div>
+
+<!-- Custom Modal -->
+<div id="custom-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+        <div id="modal-icon" class="modal-icon">✅</div>
+        <div id="modal-title" class="modal-title success-text">ຖືກຕ້ອງ!</div>
+        <div id="modal-text" class="modal-text">ເກັ່ງຫຼາຍ</div>
+        <button class="btn" id="modal-btn" onclick="closeModal()">ຕໍ່ໄປ</button>
+    </div>
+</div>
+
+<script>
+    // ປັບປຸງຄຳສັບໃຫ້ເປັນຕົວພິມໃຫຍ່ສະເພາະຕົວໜ້າ
+    const wordDictionary = [
+        { word: "Keyboard", icon: "⌨️" }, { word: "Mouse", icon: "🖱️" }, { word: "Monitor", icon: "🖥️" },
+        { word: "Cpu", icon: "🔲" }, { word: "Mainboard", icon: "🧩" }, { word: "Ram", icon: "🗄️" },
+        { word: "Graphics", icon: "🎮" }, { word: "Powersupply", icon: "🔌" }, { word: "Harddisk", icon: "💽" },
+        { word: "Ssd", icon: "🗃️" }, { word: "Casecomputer", icon: "🖥️" }, { word: "Cooling", icon: "❄️" },
+        { word: "Speaker", icon: "🔊" }, { word: "Headphone", icon: "🎧" }, { word: "Microphone", icon: "🎤" },
+        { word: "Webcam", icon: "📹" }, { word: "Scanner", icon: "🖨️" }, { word: "Printer", icon: "🖨️" },
+        { word: "Projector", icon: "📽️" }, { word: "Flashdrive", icon: "🗝️" }, { word: "Memorycard", icon: "💳" },
+        { word: "Lancable", icon: "🌐" }, { word: "Router", icon: "📡" }, { word: "Modem", icon: "📟" },
+        { word: "Wifiadapter", icon: "📶" }, { word: "Touchpad", icon: "🔲" }, { word: "Joystick", icon: "🕹️" },
+        { word: "Bluetooth", icon: "ᛒ" }, { word: "Ups", icon: "🔋" }, { word: "Soundcard", icon: "🎵" },
+        { word: "Capturecard", icon: "📼" }, { word: "Satacable", icon: "〰️" }, { word: "Hdmicable", icon: "🔌" },
+        { word: "Vgacable", icon: "🔌" }, { word: "Display", icon: "📺" }, { word: "Wireless", icon: "📡" },
+        { word: "Laptop", icon: "💻" }, { word: "Touchscreen", icon: "👆" }
+    ];
+
+    let currentWordObj = null;
+    let score = 0;
+    let questionNum = 1;
+    let timeLeft = 45;
+    let timerInterval;
+    let draggedElement = null;
+    let gameWords = [];
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function startGame() {
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        score = 0;
+        questionNum = 1;
+        gameWords = shuffleArray([...wordDictionary]).slice(0, 10);
+        updateStats();
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        if (questionNum > 10) {
+            showModal("🏆 ຊະນະແລ້ວ!", "ຍິນດີນຳ! ທ່ານຕອບຖືກຄົບ 10 ຂໍ້", "success", resetToStart);
+            return;
+        }
+
+        currentWordObj = gameWords[questionNum - 1];
+        document.getElementById('word-icon').innerText = currentWordObj.icon;
+        
+        const slotsContainer = document.getElementById('answer-slots');
+        const poolContainer = document.getElementById('letter-pool');
+        slotsContainer.innerHTML = '';
+        poolContainer.innerHTML = '';
+
+        // Generate Slots
+        for (let i = 0; i < currentWordObj.word.length; i++) {
+            let slot = document.createElement('div');
+            slot.className = 'slot';
+            slot.dataset.index = i;
+            slot.addEventListener('dragover', e => e.preventDefault());
+            slot.addEventListener('drop', handleDrop);
+            slot.addEventListener('click', handleSlotClick);
+            slotsContainer.appendChild(slot);
+        }
+
+        // Generate Shuffled Letters
+        let letters = currentWordObj.word.split('');
+        shuffleArray(letters);
+        letters.forEach((char, index) => {
+            let letterEl = document.createElement('div');
+            letterEl.className = 'letter';
+            letterEl.innerText = char;
+            letterEl.draggable = true;
+            letterEl.id = 'letter-' + index;
+            
+            letterEl.addEventListener('dragstart', handleDragStart);
+            letterEl.addEventListener('dragend', () => draggedElement = null);
+            letterEl.addEventListener('click', handleLetterClick);
+            
+            poolContainer.appendChild(letterEl);
+        });
+
+        poolContainer.addEventListener('dragover', e => e.preventDefault());
+        poolContainer.addEventListener('drop', handlePoolDrop);
+
+        startTimer();
+    }
+
+    function startTimer() {
+        clearInterval(timerInterval);
+        timeLeft = 45;
+        document.getElementById('timer').innerText = `ເວລາ: ${timeLeft}s`;
+        
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').innerText = `ເວລາ: ${timeLeft}s`;
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                gameOverTimeOut();
+            }
+        }, 1000);
+    }
+
+    function updateStats() {
+        document.getElementById('score').innerText = score;
+        document.getElementById('question-count').innerText = `${questionNum}/10`;
+    }
+
+    function handleDragStart(e) {
+        draggedElement = this;
+        e.dataTransfer.setData('text/plain', this.id);
+    }
+    
+    function handleDrop(e) {
+        e.preventDefault();
+        if (draggedElement) {
+            if (this.children.length === 0) {
+                this.appendChild(draggedElement);
+                this.classList.add('filled');
+            } else {
+                const existingLetter = this.children[0];
+                const sourceParent = draggedElement.parentElement;
+                this.appendChild(draggedElement);
+                sourceParent.appendChild(existingLetter);
+                if (sourceParent.classList.contains('slot')) sourceParent.classList.add('filled');
+            }
+        }
+    }
+
+    function handlePoolDrop(e) {
+        e.preventDefault();
+        if (draggedElement && draggedElement.parentElement.classList.contains('slot')) {
+            draggedElement.parentElement.classList.remove('filled');
+            this.appendChild(draggedElement);
+        }
+    }
+
+    function handleLetterClick(e) {
+        if (this.parentElement.id === 'letter-pool') {
+            const emptySlot = Array.from(document.querySelectorAll('.slot')).find(s => s.children.length === 0);
+            if (emptySlot) {
+                emptySlot.appendChild(this);
+                emptySlot.classList.add('filled');
+            }
+        }
+    }
+
+    function handleSlotClick(e) {
+        if (this.children.length > 0) {
+            const letter = this.children[0];
+            document.getElementById('letter-pool').appendChild(letter);
+            this.classList.remove('filled');
+        }
+    }
+
+    function checkAnswer() {
+        const slots = document.querySelectorAll('.slot');
+        let userWord = '';
+        
+        slots.forEach(slot => {
+            if (slot.children.length > 0) {
+                userWord += slot.children[0].innerText;
+            }
+        });
+
+        if (userWord.length < currentWordObj.word.length) {
+            alert("ກະລຸນາລຽງຕົວອັກສອນໃຫ້ຄົບທຸກຫ້ອງ!");
+            return;
+        }
+
+        clearInterval(timerInterval);
+
+        if (userWord === currentWordObj.word) {
+            score += 5;
+            updateStats();
+            showModal("ຖືກຕ້ອງ!", "ເກັ່ງຫຼາຍ 🎉", "success", () => {
+                questionNum++;
+                updateStats();
+                loadQuestion();
+            });
+        } else {
+            showModal("ເສຍໃຈນຳ", `ຄຳຕອບທີ່ຖືກຕ້ອງແມ່ນ: <b>${currentWordObj.word}</b>`, "error", resetToStart);
+        }
+    }
+
+    function gameOverTimeOut() {
+        showModal("ໝົດເວລາ!", `ຄຳຕອບທີ່ຖືກຕ້ອງແມ່ນ: <b>${currentWordObj.word}</b>`, "error", resetToStart);
+    }
+
+    function resetToStart() {
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('start-screen').classList.remove('hidden');
+    }
+
+    let modalCallback = null;
+    function showModal(title, text, type, callback) {
+        const modal = document.getElementById('custom-modal');
+        const mTitle = document.getElementById('modal-title');
+        const mText = document.getElementById('modal-text');
+        const mIcon = document.getElementById('modal-icon');
+        const mBtn = document.getElementById('modal-btn');
+        
+        mTitle.innerText = title;
+        mText.innerHTML = text;
+        modalCallback = callback;
+
+        mTitle.className = 'modal-title ' + (type === 'success' ? 'success-text' : 'error-text');
+        mIcon.innerText = type === 'success' ? '✅' : '❌';
+        mBtn.innerText = type === 'success' ? 'ໄປຂໍ້ຕໍ່ໄປ' : 'ເລີ່ມເກມໃໝ່';
+
+        modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('custom-modal').classList.add('hidden');
+        if (modalCallback) modalCallback();
+    }
+</script>
+
+</body>
+</html>
